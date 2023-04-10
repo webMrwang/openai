@@ -72,6 +72,7 @@ const RegisterPage = () => {
 		
 	})
   };
+  
 
   // 处理表单提交
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -81,7 +82,7 @@ const RegisterPage = () => {
     console.log("Phone number:", phoneNumber);
     console.log("Verification code:", verificationCode);
     console.log("Password:", password);
-	fetch('https://api.deepb2b.com/mall/app/register/smsCode/send',{ // 手机号码注册用户
+	fetch('https://api.deepb2b.com/mall/app/register',{ // 手机号码注册用户
 		method:'post',
 		body:JSON.stringify({
 			mobile: phoneNumber,
@@ -96,9 +97,9 @@ const RegisterPage = () => {
 		return data.json();
 	}).then(ret => {
 		//这里才是得到的最终数据
-		console.log(ret.data);
-		if(ret.data){
-			toast.success(ret.data)
+		console.log(ret);
+		if(ret.msg = 'success'){
+			toast.success('注册成功')
 			Router.push('/login');
 		}else{
 			
