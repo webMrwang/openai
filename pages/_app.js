@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import Router from "next/router";
 // ...
 
-function MyApp({ Component, pageProps }) {
+export default function MyApp({ Component, pageProps }) {
   const router = useRouter();
 	console.log(router,'routerrouter')
   useEffect(() => {
@@ -35,6 +35,3 @@ function MyApp({ Component, pageProps }) {
     </>
 	)
 }
-
-
-export default MyApp
