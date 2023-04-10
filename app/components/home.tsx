@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { toast } from "react-toastify";
-
+import Image from "next/image";
 import { IconButton } from "./button";
 import styles from "./home.module.scss";
 
@@ -114,11 +114,14 @@ export function Home() {
       >
         <div className={styles["sidebar-header"]}>
           <div className={styles["sidebar-title"]}> Deep</div>
-          <div className={styles["sidebar-sub-title"]}></div>
+          <div className={styles["sidebar-sub-title"]}>ChatGPT</div>
           <div className={styles["sidebar-logo"]}>
-            <img
+            <Image
               className="the_img"
-              src="https://dp-data.obs.cn-south-1.myhuaweicloud.com:443/files%2F9a9ef25331ae421cb66a8aa10c9905f8.png"
+              alt="My image"
+              src="/deep-log.png"
+              width="200"
+              height="44"
             />
           </div>
         </div>

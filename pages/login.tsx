@@ -11,10 +11,6 @@ const LoginPage = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     // console.log("Username:", username);
-    console.log("Password:", {
-			mobile: "18899753632",
-			password: "123456"
-		});
  // let result =  fetch('https://api.deepb2b.com/mall/app/newlogin',{
  //        headers: {
  //            Accept: 'application/vnd.dpexpo.v1+json' //设置请求头

@@ -1,6 +1,6 @@
 import { useDebouncedCallback } from "use-debounce";
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
-
+import Image from "next/image";
 import SendWhiteIcon from "../icons/send-white.svg";
 import BrainIcon from "../icons/brain.svg";
 import ExportIcon from "../icons/export.svg";
@@ -53,7 +53,16 @@ export function Avatar(props: { role: Message["role"] }) {
 
   if (props.role !== "user") {
     // return <BotIcon className={styles["user-avtar"]} />;
-	return <img className="the_img1" src="https://dp-data.obs.cn-south-1.myhuaweicloud.com:443/files%2F6d4c9de070b04c439ecd5fd401f2d54e.png" />
+    return (
+      <Image
+        className="bor_a"
+        alt="My image"
+        src="/deep_logo.png"
+        width="21"
+        height="21"
+      />
+    );
+    // return <img className="the_img1" src="https://dp-data.obs.cn-south-1.myhuaweicloud.com:443/files%2F6d4c9de070b04c439ecd5fd401f2d54e.png" />
   }
 
   return (
@@ -372,11 +381,12 @@ export function Chat(props: {
   };
 
   // submit user input
-  const onUserSubmit = () => { //发送
+  const onUserSubmit = () => {
+    //发送
     if (userInput.length <= 0) return;
     setIsLoading(true);
-	console.log(userInput,'userInput')
-	
+    console.log(userInput, "userInput");
+
     chatStore.onUserInput(userInput).then(() => setIsLoading(false));
     setUserInput("");
     setPromptHints([]);
