@@ -435,8 +435,11 @@ export function Chat(props: {
 
   const context: RenderMessage[] = session.context.slice();
 
+  console.log(session.messages, "session.messages");
+
   if (
     context.length === 0 &&
+    session.messages.length &&
     session.messages.at(0)?.content !== BOT_HELLO.content
   ) {
     context.push(BOT_HELLO);
