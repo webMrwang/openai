@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { toast } from "react-toastify";
-import { useRouter } from "next/router";
+
 import { IconButton } from "./button";
 import styles from "./home.module.scss";
 
@@ -53,11 +53,8 @@ function useSwitchTheme() {
   useEffect(() => {
     document.body.classList.remove("light");
     document.body.classList.remove("dark");
-    if (typeof window !== "undefined") {
-      if (!localStorage.getItem("token")) {
-        location.href = `${location.origin}/login`;
-        // router.push('/login');
-      }
+    if (!localStorage.getItem("token")) {
+      location.href = `${location.origin}/login`;
     }
     if (config.theme === "dark") {
       document.body.classList.add("dark");
@@ -94,7 +91,6 @@ export function Home() {
   const loading = !useHasHydrated();
   const [showSideBar, setShowSideBar] = useState(true);
 
-  // const router = useRouter()
   // setting
   const [openSettings, setOpenSettings] = useState(false);
   const config = useChatStore((state) => state.config);

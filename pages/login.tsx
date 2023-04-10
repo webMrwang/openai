@@ -8,7 +8,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
 
   // 处理表单提交
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     // console.log("Username:", username);
     console.log("Password:", {

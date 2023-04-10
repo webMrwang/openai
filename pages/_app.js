@@ -7,7 +7,6 @@ import Router from "next/router";
 
 export default function MyApp({ Component, pageProps }) {
   const router = useRouter();
-	console.log(router,'routerrouter')
   useEffect(() => {
     // 当路由变化时执行这个函数
     const handleRouteChange = () => {
@@ -35,3 +34,5 @@ export default function MyApp({ Component, pageProps }) {
     </>
 	)
 }
+
+

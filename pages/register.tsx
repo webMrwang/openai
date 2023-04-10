@@ -18,7 +18,8 @@ const RegisterPage = () => {
 
   // 定义计时器
   useEffect(() => {
-    let timer = null;
+    let timer: NodeJS.Timeout | null = null;
+
     if (countdown > 0) {
       // 如果倒计时还没结束，继续计时
       timer = setTimeout(() => {
@@ -29,11 +30,13 @@ const RegisterPage = () => {
       setDisabled(false);
     }
     // 组件卸载时清除计时器
-    return () => clearTimeout(timer);
+   return () => clearTimeout(timer as unknown as number);
+
+
   }, [countdown]);
 
   // 处理发送验证码
-  const handleSendVerificationCode = (event) => {
+  const handleSendVerificationCode = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     console.log("Sending verification code to", phoneNumber);
 
@@ -71,7 +74,7 @@ const RegisterPage = () => {
   };
 
   // 处理表单提交
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 	 
     event.preventDefault();
     console.log("Username:", username);
