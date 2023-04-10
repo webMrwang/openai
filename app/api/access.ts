@@ -1,7 +1,7 @@
 import md5 from "spark-md5";
 
 export function getAccessCodes(): Set<string> {
-  const code = process.env.CODE;
+  const code = "Deep8888";//process.env.CODE
 
   try {
     const codes = (code?.split(",") ?? [])
@@ -11,6 +11,7 @@ export function getAccessCodes(): Set<string> {
   } catch (e) {
     return new Set();
   }
+  
 }
 
 export const ACCESS_CODES = getAccessCodes();

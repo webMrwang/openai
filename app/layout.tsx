@@ -17,11 +17,11 @@ try {
 }
 
 export const metadata = {
-  title: "ChatGPT Next Web",
+  title: "ChatGPT Deep",
   description: "Your personal ChatGPT Chat Bot.",
   appleWebApp: {
-    title: "ChatGPT Next Web",
-    statusBarStyle: "default",
+    title: "ChatGPT Deep",
+    statusBarStyle: "black-translucent",
   },
   themeColor: "#fafafa",
 };
@@ -52,11 +52,6 @@ export default function RootLayout({
         <meta
           name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
-        />
-        <meta
-          name="theme-color"
-          content="#151515"
-          media="(prefers-color-scheme: dark)"
         />
         <Meta />
         <link rel="manifest" href="/site.webmanifest"></link>

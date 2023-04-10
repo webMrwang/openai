@@ -1,5 +1,6 @@
 import type { ChatRequest, ChatReponse } from "./api/openai/typing";
-import { Message, ModelConfig, useAccessStore, useChatStore } from "./store";
+import { filterConfig, Message, ModelConfig, useAccessStore } from "./store";
+import Locale from "./locales";
 import { showToast } from "./components/ui-lib";
 
 const TIME_OUT_MS = 30000;
@@ -20,16 +21,10 @@ const makeRequestParam = (
     sendMessages = sendMessages.filter((m) => m.role !== "assistant");
   }
 
-  const modelConfig = { ...useChatStore.getState().config.modelConfig };
-
-  // @yidadaa: wont send max_tokens, because it is nonsense for Muggles
-  // @ts-expect-error
-  delete modelConfig.max_tokens;
-
   return {
+    model: "gpt-3.5-turbo",
     messages: sendMessages,
     stream: options?.stream,
-    ...modelConfig,
   };
 };
 
@@ -37,9 +32,11 @@ function getHeaders() {
   const accessStore = useAccessStore.getState();
   let headers: Record<string, string> = {};
 
-  if (accessStore.enabledAccessControl()) {
-    headers["access-code"] = accessStore.accessCode;
-  }
+  // if (accessStore.enabledAccessControl()) {
+  //   headers["access-code"] = "Deep8888"; //accessStore.accessCode
+  // }
+  
+  headers["access-code"] = "Deep8888";
 
   if (accessStore.token && accessStore.token.length > 0) {
     headers["token"] = accessStore.token;
@@ -50,10 +47,11 @@ function getHeaders() {
 
 export function requestOpenaiClient(path: string) {
   return (body: any, method = "POST") =>
-    fetch("/api/openai?_vercel_no_cache=1", {
+    fetch("/api/openai", {
       method,
       headers: {
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
         path,
         ...getHeaders(),
       },
@@ -80,45 +78,82 @@ export async function requestUsage() {
       .getDate()
       .toString()
       .padStart(2, "0")}`;
-  const ONE_DAY = 2 * 24 * 60 * 60 * 1000;
+  const ONE_DAY = 24 * 60 * 60 * 1000;
   const now = new Date(Date.now() + ONE_DAY);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startDate = formatDate(startOfMonth);
   const endDate = formatDate(now);
+  const res = await requestOpenaiClient(
+    `dashboard/billing/usage?start_date=${startDate}&end_date=${endDate}`,
+  )(null, "GET");
 
-  const [used, subs] = await Promise.all([
-    requestOpenaiClient(
-      `dashboard/billing/usage?start_date=${startDate}&end_date=${endDate}`,
-    )(null, "GET"),
-    requestOpenaiClient("dashboard/billing/subscription")(null, "GET"),
-  ]);
-
-  const response = (await used.json()) as {
-    total_usage?: number;
-    error?: {
-      type: string;
-      message: string;
+  try {
+    const response = (await res.json()) as {
+      total_usage: number;
+      error?: {
+        type: string;
+        message: string;
+      };
     };
-  };
 
-  const total = (await subs.json()) as {
-    hard_limit_usd?: number;
-  };
+    if (response.error && response.error.type) {
+      showToast(response.error.message);
+      return;
+    }
 
-  if (response.error && response.error.type) {
-    showToast(response.error.message);
-    return;
+    if (response.total_usage) {
+      response.total_usage = Math.round(response.total_usage) / 100;
+    }
+    return response.total_usage;
+  } catch (error) {
+    console.error("[Request usage] ", error, res.body);
   }
-
-  if (response.total_usage) {
-    response.total_usage = Math.round(response.total_usage) / 100;
-  }
-
-  return {
-    used: response.total_usage,
-    subscription: total.hard_limit_usd,
-  };
 }
+
+export function requestRegister(path: string) { //注册
+  return (body: any, method = "POST") =>
+    fetch("/register", {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        path,
+        ...getHeaders(),
+      },
+      body: body && JSON.stringify(body),
+    });
+}
+
+export function requestLogin(path: string) { //登录
+  return (body: any, method = "POST") =>
+    fetch("/login", {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        path,
+        ...getHeaders(),
+      },
+      body: body && JSON.stringify(body),
+    });
+}
+
+export function requestUploadStorege(path: string) { //上传聊天记录
+  return (body: any, method = "POST") =>
+    fetch("/storege", {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        path,
+        ...getHeaders(),
+      },
+      body: body && JSON.stringify(body),
+    });
+}
+
+
+
 
 export async function requestChatStream(
   messages: Message[],
@@ -126,7 +161,7 @@ export async function requestChatStream(
     filterBot?: boolean;
     modelConfig?: ModelConfig;
     onMessage: (message: string, done: boolean) => void;
-    onError: (error: Error, statusCode?: number) => void;
+    onError: (error: Error) => void;
     onController?: (controller: AbortController) => void;
   },
 ) {
@@ -134,6 +169,11 @@ export async function requestChatStream(
     stream: true,
     filterBot: options?.filterBot,
   });
+
+  // valid and assign model config
+  if (options?.modelConfig) {
+    Object.assign(req, filterConfig(options.modelConfig));
+  }
 
   console.log("[Request] ", req);
 
@@ -185,10 +225,11 @@ export async function requestChatStream(
       finish();
     } else if (res.status === 401) {
       console.error("Anauthorized");
-      options?.onError(new Error("Anauthorized"), res.status);
+      responseText = Locale.Error.Unauthorized;
+      finish();
     } else {
       console.error("Stream Error", res.body);
-      options?.onError(new Error("Stream Error"), res.status);
+      options?.onError(new Error("Stream Error"));
     }
   } catch (err) {
     console.error("NetWork Error", err);
@@ -216,22 +257,23 @@ export const ControllerPool = {
 
   addController(
     sessionIndex: number,
-    messageId: number,
+    messageIndex: number,
     controller: AbortController,
   ) {
-    const key = this.key(sessionIndex, messageId);
+    const key = this.key(sessionIndex, messageIndex);
     this.controllers[key] = controller;
     return key;
   },
 
-  stop(sessionIndex: number, messageId: number) {
-    const key = this.key(sessionIndex, messageId);
+  stop(sessionIndex: number, messageIndex: number) {
+    const key = this.key(sessionIndex, messageIndex);
     const controller = this.controllers[key];
+    console.log(controller);
     controller?.abort();
   },
 
-  remove(sessionIndex: number, messageId: number) {
-    const key = this.key(sessionIndex, messageId);
+  remove(sessionIndex: number, messageIndex: number) {
+    const key = this.key(sessionIndex, messageIndex);
     delete this.controllers[key];
   },
 

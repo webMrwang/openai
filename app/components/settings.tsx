@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, HTMLProps } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 
@@ -8,8 +8,6 @@ import ResetIcon from "../icons/reload.svg";
 import CloseIcon from "../icons/close.svg";
 import ClearIcon from "../icons/clear.svg";
 import EditIcon from "../icons/edit.svg";
-import EyeIcon from "../icons/eye.svg";
-import EyeOffIcon from "../icons/eye-off.svg";
 
 import { List, ListItem, Popover, showToast } from "./ui-lib";
 
@@ -21,18 +19,15 @@ import {
   ALL_MODELS,
   useUpdateStore,
   useAccessStore,
-  ModalConfigValidator,
 } from "../store";
 import { Avatar } from "./chat";
 
 import Locale, { AllLangs, changeLang, getLang } from "../locales";
-import { getCurrentVersion, getEmojiUrl } from "../utils";
+import { getCurrentVersion } from "../utils";
 import Link from "next/link";
 import { UPDATE_URL } from "../constant";
 import { SearchService, usePromptStore } from "../store/prompt";
 import { requestUsage } from "../requests";
-import { ErrorBoundary } from "./error";
-import { InputRange } from "./input-range";
 
 function SettingItem(props: {
   title: string;
@@ -49,29 +44,6 @@ function SettingItem(props: {
       </div>
       {props.children}
     </ListItem>
-  );
-}
-
-function PasswordInput(props: HTMLProps<HTMLInputElement>) {
-  const [visible, setVisible] = useState(false);
-
-  function changeVisibility() {
-    setVisible(!visible);
-  }
-
-  return (
-    <div className={styles["password-input-container"]}>
-      <IconButton
-        icon={visible ? <EyeIcon /> : <EyeOffIcon />}
-        onClick={changeVisibility}
-        className={styles["password-eye"]}
-      />
-      <input
-        {...props}
-        type={visible ? "text" : "password"}
-        className={styles["password-input"]}
-      />
-    </div>
   );
 }
 
@@ -101,22 +73,29 @@ export function Settings(props: { closeSettings: () => void }) {
 
   const [usage, setUsage] = useState<{
     used?: number;
-    subscription?: number;
   }>();
   const [loadingUsage, setLoadingUsage] = useState(false);
   function checkUsage() {
     setLoadingUsage(true);
     requestUsage()
-      .then((res) => setUsage(res))
+      .then((res) =>
+        setUsage({
+          used: res,
+        }),
+      )
       .finally(() => {
         setLoadingUsage(false);
       });
   }
 
+  useEffect(() => {
+    checkUpdate();
+    checkUsage();
+  }, []);
+
   const accessStore = useAccessStore();
   const enabledAccessControl = useMemo(
     () => accessStore.enabledAccessControl(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -124,28 +103,8 @@ export function Settings(props: { closeSettings: () => void }) {
   const builtinCount = SearchService.count.builtin;
   const customCount = promptStore.prompts.size ?? 0;
 
-  const showUsage = accessStore.isAuthorized();
-  useEffect(() => {
-    checkUpdate();
-    showUsage && checkUsage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const keydownEvent = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        props.closeSettings();
-      }
-    };
-    document.addEventListener("keydown", keydownEvent);
-    return () => {
-      document.removeEventListener("keydown", keydownEvent);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
-    <ErrorBoundary>
+    <>
       <div className={styles["window-header"]}>
         <div className={styles["window-header-title"]}>
           <div className={styles["window-header-main-title"]}>
@@ -159,14 +118,7 @@ export function Settings(props: { closeSettings: () => void }) {
           <div className={styles["window-action-button"]}>
             <IconButton
               icon={<ClearIcon />}
-              onClick={() => {
-                const confirmed = window.confirm(
-                  `${Locale.Settings.Actions.ConfirmClearAll.Confirm}`,
-                );
-                if (confirmed) {
-                  clearSessions();
-                }
-              }}
+              onClick={clearSessions}
               bordered
               title={Locale.Settings.Actions.ClearAll}
             />
@@ -174,14 +126,7 @@ export function Settings(props: { closeSettings: () => void }) {
           <div className={styles["window-action-button"]}>
             <IconButton
               icon={<ResetIcon />}
-              onClick={() => {
-                const confirmed = window.confirm(
-                  `${Locale.Settings.Actions.ConfirmResetAll.Confirm}`,
-                );
-                if (confirmed) {
-                  resetConfig();
-                }
-              }}
+              onClick={resetConfig}
               bordered
               title={Locale.Settings.Actions.ResetAll}
             />
@@ -205,7 +150,6 @@ export function Settings(props: { closeSettings: () => void }) {
                 <EmojiPicker
                   lazyLoadEmojis
                   theme={EmojiTheme.AUTO}
-                  getEmojiUrl={getEmojiUrl}
                   onEmojiClick={(e) => {
                     updateConfig((config) => (config.avatar = e.unified));
                     setShowEmojiPicker(false);
@@ -305,7 +249,8 @@ export function Settings(props: { closeSettings: () => void }) {
             title={Locale.Settings.FontSize.Title}
             subTitle={Locale.Settings.FontSize.SubTitle}
           >
-            <InputRange
+            <input
+              type="range"
               title={`${config.fontSize ?? 14}px`}
               value={config.fontSize}
               min="12"
@@ -317,7 +262,7 @@ export function Settings(props: { closeSettings: () => void }) {
                     (config.fontSize = Number.parseInt(e.currentTarget.value)),
                 )
               }
-            ></InputRange>
+            ></input>
           </SettingItem>
 
           <SettingItem title={Locale.Settings.TightBorder}>
@@ -345,103 +290,6 @@ export function Settings(props: { closeSettings: () => void }) {
             ></input>
           </SettingItem>
         </List>
-
-        <List>
-          {enabledAccessControl ? (
-            <SettingItem
-              title={Locale.Settings.AccessCode.Title}
-              subTitle={Locale.Settings.AccessCode.SubTitle}
-            >
-              <PasswordInput
-                value={accessStore.accessCode}
-                type="text"
-                placeholder={Locale.Settings.AccessCode.Placeholder}
-                onChange={(e) => {
-                  accessStore.updateCode(e.currentTarget.value);
-                }}
-              />
-            </SettingItem>
-          ) : (
-            <></>
-          )}
-
-          <SettingItem
-            title={Locale.Settings.Token.Title}
-            subTitle={Locale.Settings.Token.SubTitle}
-          >
-            <PasswordInput
-              value={accessStore.token}
-              type="text"
-              placeholder={Locale.Settings.Token.Placeholder}
-              onChange={(e) => {
-                accessStore.updateToken(e.currentTarget.value);
-              }}
-            />
-          </SettingItem>
-
-          <SettingItem
-            title={Locale.Settings.Usage.Title}
-            subTitle={
-              showUsage
-                ? loadingUsage
-                  ? Locale.Settings.Usage.IsChecking
-                  : Locale.Settings.Usage.SubTitle(
-                      usage?.used ?? "[?]",
-                      usage?.subscription ?? "[?]",
-                    )
-                : Locale.Settings.Usage.NoAccess
-            }
-          >
-            {!showUsage || loadingUsage ? (
-              <div />
-            ) : (
-              <IconButton
-                icon={<ResetIcon></ResetIcon>}
-                text={Locale.Settings.Usage.Check}
-                onClick={checkUsage}
-              />
-            )}
-          </SettingItem>
-
-          <SettingItem
-            title={Locale.Settings.HistoryCount.Title}
-            subTitle={Locale.Settings.HistoryCount.SubTitle}
-          >
-            <InputRange
-              title={config.historyMessageCount.toString()}
-              value={config.historyMessageCount}
-              min="0"
-              max="25"
-              step="1"
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.historyMessageCount = e.target.valueAsNumber),
-                )
-              }
-            ></InputRange>
-          </SettingItem>
-
-          <SettingItem
-            title={Locale.Settings.CompressThreshold.Title}
-            subTitle={Locale.Settings.CompressThreshold.SubTitle}
-          >
-            <input
-              type="number"
-              min={500}
-              max={4000}
-              value={config.compressMessageLengthThreshold}
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.compressMessageLengthThreshold =
-                      e.currentTarget.valueAsNumber),
-                )
-              }
-            ></input>
-          </SettingItem>
-        </List>
-
         <List>
           <SettingItem
             title={Locale.Settings.Prompt.Disable.Title}
@@ -473,6 +321,97 @@ export function Settings(props: { closeSettings: () => void }) {
             />
           </SettingItem>
         </List>
+        <List>
+          {enabledAccessControl ? (
+            <SettingItem
+              title={Locale.Settings.AccessCode.Title}
+              subTitle={Locale.Settings.AccessCode.SubTitle}
+            >
+              <input
+                value={accessStore.accessCode}
+                type="text"
+                placeholder={Locale.Settings.AccessCode.Placeholder}
+                onChange={(e) => {
+                  accessStore.updateCode(e.currentTarget.value);
+                }}
+              ></input>
+            </SettingItem>
+          ) : (
+            <></>
+          )}
+
+          <SettingItem
+            title={Locale.Settings.Token.Title}
+            subTitle={Locale.Settings.Token.SubTitle}
+          >
+            <input
+              value={accessStore.token}
+              type="text"
+              placeholder={Locale.Settings.Token.Placeholder}
+              onChange={(e) => {
+                accessStore.updateToken(e.currentTarget.value);
+              }}
+            ></input>
+          </SettingItem>
+
+          <SettingItem
+            title={Locale.Settings.Usage.Title}
+            subTitle={
+              loadingUsage
+                ? Locale.Settings.Usage.IsChecking
+                : Locale.Settings.Usage.SubTitle(usage?.used ?? "[?]")
+            }
+          >
+            {loadingUsage ? (
+              <div />
+            ) : (
+              <IconButton
+                icon={<ResetIcon></ResetIcon>}
+                text={Locale.Settings.Usage.Check}
+                onClick={checkUsage}
+              />
+            )}
+          </SettingItem>
+
+          <SettingItem
+            title={Locale.Settings.HistoryCount.Title}
+            subTitle={Locale.Settings.HistoryCount.SubTitle}
+          >
+            <input
+              type="range"
+              title={config.historyMessageCount.toString()}
+              value={config.historyMessageCount}
+              min="0"
+              max="25"
+              step="2"
+              onChange={(e) =>
+                updateConfig(
+                  (config) =>
+                    (config.historyMessageCount = e.target.valueAsNumber),
+                )
+              }
+            ></input>
+          </SettingItem>
+
+          <SettingItem
+            title={Locale.Settings.CompressThreshold.Title}
+            subTitle={Locale.Settings.CompressThreshold.SubTitle}
+          >
+            <input
+              type="number"
+              min={500}
+              max={4000}
+              value={config.compressMessageLengthThreshold}
+              onChange={(e) =>
+                updateConfig(
+                  (config) =>
+                    (config.compressMessageLengthThreshold =
+                      e.currentTarget.valueAsNumber),
+                )
+              }
+            ></input>
+          </SettingItem>
+        </List>
 
         <List>
           <SettingItem title={Locale.Settings.Model}>
@@ -481,9 +420,7 @@ export function Settings(props: { closeSettings: () => void }) {
               onChange={(e) => {
                 updateConfig(
                   (config) =>
-                    (config.modelConfig.model = ModalConfigValidator.model(
-                      e.currentTarget.value,
-                    )),
+                    (config.modelConfig.model = e.currentTarget.value),
                 );
               }}
             >
@@ -498,8 +435,9 @@ export function Settings(props: { closeSettings: () => void }) {
             title={Locale.Settings.Temperature.Title}
             subTitle={Locale.Settings.Temperature.SubTitle}
           >
-            <InputRange
-              value={config.modelConfig.temperature?.toFixed(1)}
+            <input
+              type="range"
+              value={config.modelConfig.temperature.toFixed(1)}
               min="0"
               max="2"
               step="0.1"
@@ -507,12 +445,10 @@ export function Settings(props: { closeSettings: () => void }) {
                 updateConfig(
                   (config) =>
                     (config.modelConfig.temperature =
-                      ModalConfigValidator.temperature(
-                        e.currentTarget.valueAsNumber,
-                      )),
+                      e.currentTarget.valueAsNumber),
                 );
               }}
-            ></InputRange>
+            ></input>
           </SettingItem>
           <SettingItem
             title={Locale.Settings.MaxTokens.Title}
@@ -521,15 +457,13 @@ export function Settings(props: { closeSettings: () => void }) {
             <input
               type="number"
               min={100}
-              max={32000}
+              max={4096}
               value={config.modelConfig.max_tokens}
               onChange={(e) =>
                 updateConfig(
                   (config) =>
                     (config.modelConfig.max_tokens =
-                      ModalConfigValidator.max_tokens(
-                        e.currentTarget.valueAsNumber,
-                      )),
+                      e.currentTarget.valueAsNumber),
                 )
               }
             ></input>
@@ -538,8 +472,9 @@ export function Settings(props: { closeSettings: () => void }) {
             title={Locale.Settings.PresencePenlty.Title}
             subTitle={Locale.Settings.PresencePenlty.SubTitle}
           >
-            <InputRange
-              value={config.modelConfig.presence_penalty?.toFixed(1)}
+            <input
+              type="range"
+              value={config.modelConfig.presence_penalty.toFixed(1)}
               min="-2"
               max="2"
               step="0.5"
@@ -547,15 +482,13 @@ export function Settings(props: { closeSettings: () => void }) {
                 updateConfig(
                   (config) =>
                     (config.modelConfig.presence_penalty =
-                      ModalConfigValidator.presence_penalty(
-                        e.currentTarget.valueAsNumber,
-                      )),
+                      e.currentTarget.valueAsNumber),
                 );
               }}
-            ></InputRange>
+            ></input>
           </SettingItem>
         </List>
       </div>
-    </ErrorBoundary>
+    </>
   );
 }

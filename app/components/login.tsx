@@ -1,6 +1,6 @@
 "use client";
+
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { toast } from "react-toastify";
 
 import { IconButton } from "./button";
 import styles from "./home.module.scss";
@@ -78,13 +78,10 @@ const useHasHydrated = () => {
 	return hasHydrated;
 };
 
-export function Home() {
-	if(!localStorage.getItem('token')){
-
-		location.href = `${location.origin}/login`
-	}
-	  
-
+export function Login() {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 	const [createNewSession, currentIndex, removeSession] = useChatStore(
 		(state) => [
 			state.newSession,
@@ -92,7 +89,7 @@ export function Home() {
 			state.removeSession,
 		],
 	);
-	const loading = !useHasHydrated();
+	// const loading = !useHasHydrated();
 	const [showSideBar, setShowSideBar] = useState(true);
 
 	// setting
@@ -104,98 +101,29 @@ export function Home() {
 	if (loading) {
 		return <Loading />;
 	}
+	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setLoading(true);
+		setTimeout(() => {
+			setLoading(false);
+			alert('Login succeeded');
+		}, 1000); // 模拟异步请求
+	};
 
 	return (
-		<div
-			className={`${config.tightBorder && !isMobileScreen()
-					? styles["tight-container"]
-					: styles.container
-				}`}
-		>
-			<div
-				className={styles.sidebar + ` ${showSideBar && styles["sidebar-show"]}`}
-			>
-				<div className={styles["sidebar-header"]}>
-				
-					<div className={styles["sidebar-title"]}> Deep</div>
-					<div className={styles["sidebar-sub-title"]}>
-						
-					</div>
-					<div className={styles["sidebar-logo"]}>
-
-						<img className="the_img" src="https://dp-data.obs.cn-south-1.myhuaweicloud.com:443/files%2F9a9ef25331ae421cb66a8aa10c9905f8.png" />
-					</div>
+		<div style={{ padding: 20 }}>
+			<h1>Login Page</h1>
+			<form onSubmit={handleSubmit}>
+				<div style={{ marginBottom: 20 }}>
+					<label htmlFor="username" style={{ display: 'inline-block', width: 80, textAlign: 'right', marginRight: 10 }}>Username:</label>
+					<input type="text" id="username" value={username} onChange={(event) => setUsername(event.target.value)} />
 				</div>
-
-				<div
-					className={styles["sidebar-body"]}
-					onClick={() => {
-						setOpenSettings(false);
-						setShowSideBar(false);
-					}}
-				>
-					<ChatList />
+				<div style={{ marginBottom: 20 }}>
+					<label htmlFor="password" style={{ display: 'inline-block', width: 80, textAlign: 'right', marginRight: 10 }}>Password:</label>
+					<input type="password" id="password" value={password} onChange={(event) => setPassword(event.target.value)} />
 				</div>
-
-				<div className={styles["sidebar-tail"]}>
-
-					<div className={styles["sidebar-actions"]}>
-						<div className={styles["sidebar-action"] + " " + styles.mobile}>
-							<IconButton
-								icon={<CloseIcon />}
-								onClick={() => {
-									if (confirm(Locale.Home.DeleteChat)) {
-										removeSession(currentIndex);
-									}
-								}}
-							/>
-						</div>
-						<div className={styles["sidebar-action"]}>
-							<IconButton
-								icon={<SettingsIcon />}
-								onClick={() => {
-									setOpenSettings(true);
-									setShowSideBar(false);
-								}}
-								shadow
-							/>
-						</div>
-						<div className={styles["sidebar-action"]}>
-							<a href={REPO_URL} target="_blank">
-								<IconButton icon={<GithubIcon />} shadow />
-							</a>
-						</div>
-					</div>
-					<div>
-						<IconButton
-							icon={<AddIcon />}
-							text={Locale.Home.NewChat}
-							onClick={() => {
-								createNewSession();
-								setShowSideBar(false);
-							}}
-							shadow
-						/>
-					</div>
-				</div>
-			</div>
-
-			<div className={styles["window-content"]}>
-				{openSettings ? (
-					<Settings
-						closeSettings={() => {
-							setOpenSettings(false);
-							setShowSideBar(true);
-						}}
-					/>
-				) : (
-					<Chat
-						key="chat"
-						showSideBar={() => setShowSideBar(true)}
-						sideBarShowing={showSideBar}
-					/>
-				)}
-			</div>
+				<button type="submit" disabled={loading}>Login</button>
+			</form>
 		</div>
 	);
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_CODES } from "./app/api/access";
+
 import md5 from "spark-md5";
 
 export const config = {
@@ -7,6 +8,7 @@ export const config = {
 };
 
 export function middleware(req: NextRequest) {
+	console.log(ACCESS_CODES)
   const accessCode = req.headers.get("access-code");
   const token = req.headers.get("token");
   const hashedCode = md5.hash(accessCode ?? "").trim();
