@@ -62,12 +62,12 @@ export function Avatar(props: { role: Message["role"] }) {
         height="21"
       />
     );
-    // return <img className="the_img1" src="https://dp-data.obs.cn-south-1.myhuaweicloud.com:443/files%2F6d4c9de070b04c439ecd5fd401f2d54e.png" />
+    // return <img className="the_img1" src="https://dp-data.obs.cn-south-1.myhuaweicloud.com:443/files%2F6d4c9de070b04c439ecd5fd401f2d54e.png" <Emoji unified={config.avatar} size={18} /> />
   }
 
   return (
     <div className={styles["user-avtar"]}>
-      <Emoji unified={config.avatar} size={18} />
+      <img className="the_img1" src="/1f603.png" />
     </div>
   );
 }
