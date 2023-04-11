@@ -435,11 +435,17 @@ export function Chat(props: {
 
   const context: RenderMessage[] = session.context.slice();
 
-  console.log(session.messages, "session.messages");
+  console.log(session, "session.messages");
+  Array.prototype.at = function (index) {
+    if (index < 0) {
+      index += this.length;
+    }
+
+    return this[index];
+  };
 
   if (
     context.length === 0 &&
-    session.messages.length &&
     session.messages.at(0)?.content !== BOT_HELLO.content
   ) {
     context.push(BOT_HELLO);
