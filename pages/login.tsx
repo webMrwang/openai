@@ -50,6 +50,8 @@ const LoginPage = () => {
 			toast.success('登录成功')
 			localStorage.setItem('token',ret.data.token)
 			Router.push('/');
+		}else{
+			toast.error(ret.msg)
 		}
 		
 	})
